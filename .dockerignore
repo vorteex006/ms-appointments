@@ -1,0 +1,16 @@
+target/
+.idea/
+.git/
+.env
+.env.*
+!.env.example
+*.log
+logs/
+.DS_Store
+*.iml
+docs/
+
+*.pem
+*.key
+
+.vscode/
