@@ -5,6 +5,7 @@ server:
 spring:
   application:
     name: ms-appointments
+
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/vitalpet_appointments?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USER:root}
@@ -12,11 +13,13 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 5
+
   jpa:
     hibernate:
-      # "update" crea y ajusta las tablas pero no borra los datos al reiniciar
       ddl-auto: ${DDL_AUTO:update}
     show-sql: ${SHOW_SQL:false}
+    open-in-view: false
+
   cloud:
     openfeign:
       client:
@@ -25,21 +28,23 @@ spring:
             connect-timeout: 3000
             read-timeout: 5000
 
-# integracion con ms-pets (lo hizo nacho)
+# Integracion con ms-pets
 pets:
   service:
-    # url base donde corre ms-pets (ip y puerto de su ec2, o localhost:8083 en local)
     url: ${PETS_SERVICE_URL:http://localhost:8083}
   validation:
-    # false = el petId se acepta sin consultar a ms-pets (modo standalone)
-    # true  = se valida que la mascota exista, este activa y sea del dueno (requiere ms-pets arriba)
-    enabled: ${PETS_VALIDATION_ENABLED:false}
+    enabled: ${PETS_VALIDATION_ENABLED:true}
 
-# cors (el frontend llama directo a este servicio)
+# Clave usada por OpenFeign para consultar Pets
+internal:
+  api:
+    key: ${INTERNAL_API_KEY}
+
+# CORS del frontend
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
 
-# swagger
+# Swagger
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

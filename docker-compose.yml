@@ -1,57 +1,71 @@
-# vitalpet connect - ms-appointments (standalone)
-# levanta mysql propia + el microservicio, pensado para una sola instancia ec2
-#   cp .env.example .env   (y editar las claves)
-#   docker compose up -d --build
-
 services:
   db:
     image: mysql:8.0
     container_name: appointments-db
+
     command:
       - --innodb-buffer-pool-size=128M
       - --max_connections=50
+
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Define DB_ROOT_PASSWORD en el archivo .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Define_DB_ROOT_PASSWORD}
       MYSQL_DATABASE: vitalpet_appointments
       MYSQL_USER: ${DB_USER:-vitalpet}
-      MYSQL_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el archivo .env}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Define_DB_PASSWORD}
+
     volumes:
       - appointments-db-data:/var/lib/mysql
-    # sin "ports": la base de datos no se publica fuera de la red de docker
+
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
+
     restart: unless-stopped
 
   ms-appointments:
     build: .
     container_name: ms-appointments
+
     ports:
       - "8084:8084"
+
     environment:
       DB_URL: jdbc:mysql://db:3306/vitalpet_appointments?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       DB_USER: ${DB_USER:-vitalpet}
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD:?Define_DB_PASSWORD}
+
+      # Validacion de mascotas mediante OpenFeign
       PETS_VALIDATION_ENABLED: "true"
       PETS_SERVICE_URL: http://ms-pets:8083
+
+      # Autenticacion interna Appointments -> Pets
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Define_INTERNAL_API_KEY}
+
+      # Validacion JWT emitido por Users
+      JWT_SECRET: ${JWT_SECRET:?Define_JWT_SECRET}
+
+      # CORS
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
-      
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
+
     networks:
       - default
       - users-shared-network
-  
 
-volumes:
-  appointments-db-data:
+    depends_on:
+      db:
+        condition: service_healthy
+
+    restart: unless-stopped
 
 networks:
   users-shared-network:
     external: true
     name: nombre_red_ms_pets
+
+volumes:
+  appointments-db-data:
